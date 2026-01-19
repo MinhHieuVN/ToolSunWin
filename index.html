@@ -6,144 +6,158 @@
 <title>Sunwin AI Tool</title>
 
 <style>
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: Arial, sans-serif;
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
+    font-family:Arial
 }
 
-/* SUNWIN FULL MÀN */
-#sunwin {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    border: none;
-    z-index: 1;
+#sunwin{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    border:none;
+    z-index:1;
 }
 
-/* TOOL MINI */
-#tool {
-    position: fixed;
-    top: 80px;
-    left: 12px;
-    width: 120px;
-    background: rgba(0,0,0,0.75);
-    border-radius: 10px;
-    padding: 6px;
-    color: #fff;
-    z-index: 9999;
-    user-select: none;
+/* TOOL */
+#tool{
+    position:fixed;
+    top:80px;
+    left:12px;
+    width:120px;
+    background:rgba(0,0,0,.78);
+    border-radius:10px;
+    padding:6px;
+    color:#fff;
+    z-index:9999;
+    user-select:none;
 }
 
-#tool img {
-    width: 34px;
-    display: block;
-    margin: 0 auto 4px;
-    filter: drop-shadow(0 0 5px gold);
+#tool img{
+    width:34px;
+    display:block;
+    margin:0 auto 4px;
+    filter:drop-shadow(0 0 5px gold);
 }
 
-#phien {
-    font-size: 10px;
-    text-align: center;
-    margin-bottom: 4px;
+#phien{
+    font-size:10px;
+    text-align:center;
+    margin-bottom:4px;
 }
 
-#du-doan {
-    font-size: 12px;
-    text-align: center;
-    font-weight: bold;
-    padding: 4px 0;
-    border-radius: 6px;
-    background: #222;
+#du-doan{
+    font-size:12px;
+    text-align:center;
+    font-weight:bold;
+    padding:4px 0;
+    border-radius:6px;
+    background:#222;
 }
 
-.tai { color: #4caf50; }
-.xiu { color: #ff5252; }
+.tai{color:#4caf50}
+.xiu{color:#ff5252}
+.err{color:#ff9800}
 </style>
 </head>
 
 <body>
 
-<!-- WEB SUNWIN -->
 <iframe id="sunwin" src="https://web.sunwin.sx/"></iframe>
 
-<!-- TOOL -->
 <div id="tool">
-    <img src="sunwin.png" alt="SUNWIN">
-    <div id="phien">Phiên: ---</div>
-    <div id="du-doan">AI: ---</div>
+    <img src="sunwin.png">
+    <div id="phien">Phiên: --</div>
+    <div id="du-doan" class="err">Đang tải…</div>
 </div>
 
 <script>
-const API = "https://sunwinsaygex-pcl2.onrender.com/api/sun";
+const API="https://sunwinsaygex-pcl2.onrender.com/api/sun";
+let lastData=null;
 
-/* =========================
-   AI PHÂN TÍCH KHÔNG LỊCH SỬ
-   ========================= */
-function aiKhongCanLichSu(d){
-    let votes = [];
-
-    const tong = d.tong;
-    const ketQua = d.ket_qua;
-    const duDoanAPI = d.du_doan;
-
-    // 1. Cầu xác suất tổng
-    if (tong <= 7) votes.push("Xỉu");
-    else if (tong >= 14) votes.push("Tài");
-    else votes.push(tong <= 10 ? "Tài" : "Xỉu");
-
-    // 2. Cầu lặp ngắn
-    if (tong <= 6) votes.push("Xỉu");
-    if (tong >= 15) votes.push("Tài");
-
-    // 3. Cầu cân bằng
-    if (tong >= 9 && tong <= 10) votes.push("Tài");
-    if (tong >= 11 && tong <= 12) votes.push("Xỉu");
-
-    // 4. Tham khảo dự đoán API (nếu có)
-    if (duDoanAPI) votes.push(duDoanAPI);
-
-    // Tổng hợp phiếu
-    let tai = votes.filter(v => v === "Tài").length;
-    let xiu = votes.filter(v => v === "Xỉu").length;
-
-    return tai > xiu ? "Tài" : "Xỉu";
+/* FETCH CÓ TIMEOUT */
+function fetchWithTimeout(url,ms=3000){
+    return Promise.race([
+        fetch(url),
+        new Promise((_,rej)=>setTimeout(()=>rej("timeout"),ms))
+    ]);
 }
 
-/* =========================
-   CHẠY TOOL
-   ========================= */
-async function run() {
-    try {
-        const res = await fetch(API);
-        const d = await res.json();
+/* AI KHÔNG CẦN LỊCH SỬ */
+function ai(d){
+    let votes=[];
+    const tong=d.tong;
+    if(tong<=7) votes.push("Xỉu");
+    if(tong>=14) votes.push("Tài");
+    if(tong>=9 && tong<=10) votes.push("Tài");
+    if(tong>=11 && tong<=12) votes.push("Xỉu");
+    if(d.du_doan) votes.push(d.du_doan);
 
-        // Phiên hiện tại
-        document.getElementById("phien").innerText =
-            "Phiên: " + d.phien_hien_tai;
+    let t=votes.filter(v=>v==="Tài").length;
+    let x=votes.length-t;
+    return t>=x?"Tài":"Xỉu";
+}
 
-        // AI dự đoán
-        const aiResult = aiKhongCanLichSu(d);
-        const duDoanEl = document.getElementById("du-doan");
+async function run(){
+    try{
+        const r=await fetchWithTimeout(API);
+        let d=await r.json();
 
-        duDoanEl.innerText = "AI: " + aiResult;
-        duDoanEl.className = "";
+        // nếu API trả mảng
+        if(Array.isArray(d)) d=d[0];
+        lastData=d;
 
-        if (aiResult === "Tài") duDoanEl.classList.add("tai");
-        if (aiResult === "Xỉu") duDoanEl.classList.add("xiu");
-
-    } catch (err) {
-        document.getElementById("du-doan").innerText = "Lỗi API";
+    }catch(e){
+        if(!lastData){
+            duDoan.innerText="API chậm";
+            duDoan.className="err";
+            return;
+        }
     }
+
+    const d=lastData;
+    phien.innerText="Phiên: "+d.phien_hien_tai;
+
+    const kq=ai(d);
+    duDoan.innerText="AI: "+kq;
+    duDoan.className=kq==="Tài"?"tai":"xiu";
 }
 
 run();
-setInterval(run, 4000);
+setInterval(run,4000);
+
+/* DRAG (KHÔNG PHỤ THUỘC API) */
+let drag=false,ox,oy;
+tool.addEventListener("mousedown",e=>{
+    drag=true;
+    ox=e.clientX-tool.offsetLeft;
+    oy=e.clientY-tool.offsetTop;
+});
+document.addEventListener("mousemove",e=>{
+    if(drag){
+        tool.style.left=e.clientX-ox+"px";
+        tool.style.top=e.clientY-oy+"px";
+    }
+});
+document.addEventListener("mouseup",()=>drag=false);
+
+tool.addEventListener("touchstart",e=>{
+    drag=true;
+    ox=e.touches[0].clientX-tool.offsetLeft;
+    oy=e.touches[0].clientY-tool.offsetTop;
+});
+document.addEventListener("touchmove",e=>{
+    if(drag){
+        tool.style.left=e.touches[0].clientX-ox+"px";
+        tool.style.top=e.touches[0].clientY-oy+"px";
+    }
+});
+document.addEventListener("touchend",()=>drag=false);
 </script>
 
 </body>
