@@ -3,54 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sunwin AI Tool</title>
+<title>Sunwin Floating Tool</title>
 
 <style>
-body {
+html,body{
     margin:0;
-    font-family: Arial, sans-serif;
-    background:#f3f3f3;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
 }
 
-.header {
-    background:#7b1fa2;
+/* iframe Sunwin */
+#sunwin {
+    position:fixed;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    border:none;
+    z-index:1;
+}
+
+/* TOOL FLOAT */
+#tool {
+    position:fixed;
+    top:80px;
+    left:20px;
+    width:200px;
+    background:rgba(0,0,0,0.75);
+    border-radius:14px;
     color:#fff;
-    padding:12px;
-    font-weight:bold;
+    padding:10px;
+    z-index:9999;
+    user-select:none;
 }
 
-.container {
-    padding:15px;
+/* LOGO */
+#tool img {
+    width:60px;
+    display:block;
+    margin:0 auto 6px;
+    filter: drop-shadow(0 0 6px gold);
 }
 
-.tool {
-    max-width:420px;
-    margin:30px auto;
-    padding:20px;
-    border-radius:20px;
-    color:#fff;
-    position:relative;
+/* CENTER */
+#phien {
+    text-align:center;
+    font-size:13px;
+    margin-bottom:6px;
 }
 
-.sun { background:linear-gradient(135deg,#f9a825,#f57f17); }
-.tx  { background:linear-gradient(135deg,#c62828,#e53935); }
-
-.logo {
-    width:50px;height:50px;
-    border-radius:12px;
-    position:absolute;
-    top:-25px;left:50%;
-    transform:translateX(-50%);
-}
-
+/* ROW */
 .row {
     display:flex;
     justify-content:space-between;
-    align-items:center;
 }
 
-.circle {
-    width:90px;height:90px;
+/* BOX */
+.box {
+    width:80px;
+    height:80px;
     border-radius:50%;
     background:#fff;
     color:#000;
@@ -58,22 +70,7 @@ body {
     flex-direction:column;
     justify-content:center;
     align-items:center;
-}
-
-.center {
-    text-align:center;
-}
-
-.mid {
-    background:#000;
-    padding:6px 14px;
-    border-radius:10px;
-    margin-bottom:6px;
-}
-
-.percent {
     font-size:13px;
-    margin-top:5px;
 }
 
 .blink {
@@ -81,139 +78,115 @@ body {
 }
 
 @keyframes blink {
-    0% { box-shadow:0 0 5px #fff; }
-    50% { box-shadow:0 0 25px #fff; }
-    100% { box-shadow:0 0 5px #fff; }
-}
-
-iframe {
-    width:100%;
-    height:500px;
-    border:none;
-    border-radius:15px;
-    margin-top:25px;
+    0%{box-shadow:0 0 5px gold}
+    50%{box-shadow:0 0 20px gold}
+    100%{box-shadow:0 0 5px gold}
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">tranbinhzuka01</div>
+<iframe id="sunwin" src="https://web.sunwin.sx/"></iframe>
 
-<div class="container">
-
-<div class="tool sun">
-<img class="logo" src="https://i.imgur.com/6KQ8E5N.png">
-<div class="row">
-<div id="sun-tai" class="circle">
-<strong>TÀI</strong>
-<div id="sun-tai-p" class="percent">0%</div>
-</div>
-
-<div class="center">
-<div class="mid">TOOL</div>
-<div id="sun-phien">#----</div>
-<div id="sun-ai"></div>
-</div>
-
-<div id="sun-xiu" class="circle">
-<strong>XỈU</strong>
-<div id="sun-xiu-p" class="percent">0%</div>
-</div>
-</div>
-</div>
-
-<div class="tool tx">
-<img class="logo" src="https://i.imgur.com/QnN6ZcY.png">
-<div class="row">
-<div id="tx-tai" class="circle">
-<strong>TÀI</strong>
-<div id="tx-tai-p" class="percent">0%</div>
-</div>
-
-<div class="center">
-<div class="mid">TOOL</div>
-<div id="tx-phien">#----</div>
-<div id="tx-ai"></div>
-</div>
-
-<div id="tx-xiu" class="circle">
-<strong>XỈU</strong>
-<div id="tx-xiu-p" class="percent">0%</div>
-</div>
-</div>
-</div>
-
-<iframe src="https://web.sunwin.sx/"></iframe>
-
+<div id="tool">
+    <img src="sunwin.png" alt="SUNWIN">
+    <div id="phien">#----</div>
+    <div class="row">
+        <div id="tai" class="box">
+            <b>TÀI</b>
+            <span id="taiP">0%</span>
+        </div>
+        <div id="xiu" class="box">
+            <b>XỈU</b>
+            <span id="xiuP">0%</span>
+        </div>
+    </div>
 </div>
 
 <script>
 const API = "https://sunwinsaygex-pcl2.onrender.com/api/sun";
 
-function algoVotes(data) {
-    let votes = [];
+/* AI nhiều thuật toán */
+function aiVotes(data){
+    let v=[];
 
-    // Algo 1: tổng 10 phiên
+    // 1. 10 phiên
     let t=0,x=0;
-    data.slice(0,10).forEach(i=> i.result.includes("T") ? t++ : x++);
-    votes.push(t>x ? "TÀI":"XỈU");
+    data.slice(0,10).forEach(i=>i.result.includes("T")?t++:x++);
+    v.push(t>x?"T":"X");
 
-    // Algo 2: bệt
-    let streak = 1;
-    for(let i=1;i<data.length;i++){
-        if(data[i].result === data[i-1].result) streak++;
-        else break;
-    }
-    votes.push(data[0].result);
+    // 2. Bệt
+    v.push(data[0].result.includes("T")?"T":"X");
 
-    // Algo 3: đảo
-    votes.push(data[0].result === "TÀI" ? "XỈU" : "TÀI");
+    // 3. Đảo
+    v.push(data[0].result.includes("T")?"X":"T");
 
-    // Algo 4: 5 phiên
+    // 4. 5 phiên
     t=0;x=0;
-    data.slice(0,5).forEach(i=> i.result.includes("T") ? t++ : x++);
-    votes.push(t>x ? "TÀI":"XỈU");
+    data.slice(0,5).forEach(i=>i.result.includes("T")?t++:x++);
+    v.push(t>x?"T":"X");
 
-    // Algo 5: trọng số
-    votes.push(data[0].result);
+    // 5. Trọng số mới
+    v.push(data[0].result.includes("T")?"T":"X");
 
-    return votes;
+    return v;
 }
 
-async function run() {
-    const res = await fetch(API);
-    const data = await res.json();
+async function run(){
+    const r=await fetch(API);
+    const d=await r.json();
 
-    const phien = data[0].phien || data[0].round;
-    const votes = algoVotes(data);
+    document.getElementById("phien").innerText =
+        "#"+(d[0].phien||d[0].round);
 
-    const tai = votes.filter(v=>v==="TÀI").length;
-    const xiu = votes.length - tai;
+    const v=aiVotes(d);
+    const tai=v.filter(i=>i==="T").length;
+    const xiu=v.length-tai;
 
-    const taiP = Math.round(tai / votes.length * 100);
-    const xiuP = 100 - taiP;
+    const tP=Math.round(t/v.length*100);
+    const xP=100-tP;
 
-    ["sun","tx"].forEach(p=>{
-        document.getElementById(p+"-phien").innerText = "#"+phien;
-        document.getElementById(p+"-tai-p").innerText = taiP+"%";
-        document.getElementById(p+"-xiu-p").innerText = xiuP+"%";
+    taiP.innerText=tP+"%";
+    xiuP.innerText=xP+"%";
 
-        document.getElementById(p+"-tai").classList.remove("blink");
-        document.getElementById(p+"-xiu").classList.remove("blink");
+    tai.classList.remove("blink");
+    xiu.classList.remove("blink");
 
-        if (taiP > xiuP) {
-            document.getElementById(p+"-tai").classList.add("blink");
-            document.getElementById(p+"-ai").innerText = "AI: TÀI";
-        } else {
-            document.getElementById(p+"-xiu").classList.add("blink");
-            document.getElementById(p+"-ai").innerText = "AI: XỈU";
-        }
-    });
+    if(tP>xP) tai.classList.add("blink");
+    else xiu.classList.add("blink");
 }
-
 run();
 setInterval(run,5000);
+
+/* DRAG */
+let drag=false,ox,oy;
+tool.addEventListener("mousedown",e=>{
+    drag=true;
+    ox=e.clientX-tool.offsetLeft;
+    oy=e.clientY-tool.offsetTop;
+});
+document.addEventListener("mousemove",e=>{
+    if(drag){
+        tool.style.left=e.clientX-ox+"px";
+        tool.style.top=e.clientY-oy+"px";
+    }
+});
+document.addEventListener("mouseup",()=>drag=false);
+
+/* Mobile */
+tool.addEventListener("touchstart",e=>{
+    drag=true;
+    ox=e.touches[0].clientX-tool.offsetLeft;
+    oy=e.touches[0].clientY-tool.offsetTop;
+});
+document.addEventListener("touchmove",e=>{
+    if(drag){
+        tool.style.left=e.touches[0].clientX-ox+"px";
+        tool.style.top=e.touches[0].clientY-oy+"px";
+    }
+});
+document.addEventListener("touchend",()=>drag=false);
 </script>
 
 </body>
