@@ -3,84 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sunwin Floating Tool</title>
+<title>Sunwin Mini Tool</title>
 
 <style>
-html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    font-family:Arial,sans-serif;
-}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial}
 
-/* iframe Sunwin */
-#sunwin {
+/* SUNWIN */
+#sunwin{
     position:fixed;
-    top:0;left:0;
-    width:100%;
-    height:100%;
+    inset:0;
     border:none;
     z-index:1;
 }
 
-/* TOOL FLOAT */
-#tool {
+/* TOOL */
+#tool{
     position:fixed;
-    top:80px;
-    left:20px;
-    width:200px;
-    background:rgba(0,0,0,0.75);
-    border-radius:14px;
+    top:90px;
+    left:15px;
+    width:160px;
+    background:rgba(0,0,0,.72);
+    border-radius:12px;
+    padding:8px;
     color:#fff;
-    padding:10px;
     z-index:9999;
     user-select:none;
 }
 
-/* LOGO */
-#tool img {
-    width:60px;
+#tool img{
+    width:46px;
     display:block;
-    margin:0 auto 6px;
-    filter: drop-shadow(0 0 6px gold);
+    margin:0 auto 4px;
+    filter:drop-shadow(0 0 6px gold);
 }
 
-/* CENTER */
-#phien {
+#phien{
     text-align:center;
-    font-size:13px;
-    margin-bottom:6px;
+    font-size:11px;
+    margin-bottom:4px;
 }
 
-/* ROW */
-.row {
+.row{
     display:flex;
     justify-content:space-between;
 }
 
-/* BOX */
-.box {
-    width:80px;
-    height:80px;
+.box{
+    width:62px;
+    height:62px;
     border-radius:50%;
     background:#fff;
     color:#000;
     display:flex;
     flex-direction:column;
-    justify-content:center;
     align-items:center;
-    font-size:13px;
+    justify-content:center;
+    font-size:11px;
 }
 
-.blink {
-    animation: blink 0.8s infinite;
+.blink{
+    animation:blink .8s infinite;
 }
-
-@keyframes blink {
-    0%{box-shadow:0 0 5px gold}
-    50%{box-shadow:0 0 20px gold}
-    100%{box-shadow:0 0 5px gold}
+@keyframes blink{
+    0%{box-shadow:0 0 4px gold}
+    50%{box-shadow:0 0 14px gold}
+    100%{box-shadow:0 0 4px gold}
 }
 </style>
 </head>
@@ -90,103 +77,92 @@ html,body{
 <iframe id="sunwin" src="https://web.sunwin.sx/"></iframe>
 
 <div id="tool">
-    <img src="sunwin.png" alt="SUNWIN">
+    <img src="sunwin.png">
     <div id="phien">#----</div>
     <div class="row">
         <div id="tai" class="box">
             <b>TÀI</b>
-            <span id="taiP">0%</span>
+            <span id="taiP">--%</span>
         </div>
         <div id="xiu" class="box">
             <b>XỈU</b>
-            <span id="xiuP">0%</span>
+            <span id="xiuP">--%</span>
         </div>
     </div>
 </div>
 
 <script>
-const API = "https://sunwinsaygex-pcl2.onrender.com/api/sun";
+const API="https://sunwinsaygex-pcl2.onrender.com/api/sun";
 
-/* AI nhiều thuật toán */
-function aiVotes(data){
+/* CHUẨN HÓA KẾT QUẢ */
+function getTX(item){
+    if(item.total!==undefined) return item.total>=11?"T":"X";
+    if(item.result!==undefined){
+        if(typeof item.result==="number")
+            return item.result>=11?"T":"X";
+        return item.result.includes("T")?"T":"X";
+    }
+    return "X";
+}
+
+/* AI NHIỀU THUẬT TOÁN */
+function ai(data){
     let v=[];
+    let d=data.map(getTX);
 
     // 1. 10 phiên
-    let t=0,x=0;
-    data.slice(0,10).forEach(i=>i.result.includes("T")?t++:x++);
-    v.push(t>x?"T":"X");
+    let t=d.slice(0,10).filter(x=>x==="T").length;
+    v.push(t>=5?"T":"X");
 
-    // 2. Bệt
-    v.push(data[0].result.includes("T")?"T":"X");
+    // 2. bệt
+    v.push(d[0]);
 
-    // 3. Đảo
-    v.push(data[0].result.includes("T")?"X":"T");
+    // 3. đảo
+    v.push(d[0]==="T"?"X":"T");
 
     // 4. 5 phiên
-    t=0;x=0;
-    data.slice(0,5).forEach(i=>i.result.includes("T")?t++:x++);
-    v.push(t>x?"T":"X");
+    t=d.slice(0,5).filter(x=>x==="T").length;
+    v.push(t>=3?"T":"X");
 
-    // 5. Trọng số mới
-    v.push(data[0].result.includes("T")?"T":"X");
+    // 5. trọng số mới
+    v.push(d[0]);
 
     return v;
 }
 
 async function run(){
     const r=await fetch(API);
-    const d=await r.json();
+    const data=await r.json();
 
-    document.getElementById("phien").innerText =
-        "#"+(d[0].phien||d[0].round);
+    phien.innerText="#"+(data[0].phien||data[0].round||"---");
 
-    const v=aiVotes(d);
-    const tai=v.filter(i=>i==="T").length;
-    const xiu=v.length-tai;
+    const v=ai(data);
+    const t=v.filter(x=>x==="T").length;
+    const x=v.length-t;
 
-    const tP=Math.round(t/v.length*100);
-    const xP=100-tP;
+    const tp=Math.round(t/v.length*100);
+    const xp=100-tp;
 
-    taiP.innerText=tP+"%";
-    xiuP.innerText=xP+"%";
+    taiP.innerText=tp+"%";
+    xiuP.innerText=xp+"%";
 
     tai.classList.remove("blink");
     xiu.classList.remove("blink");
 
-    if(tP>xP) tai.classList.add("blink");
-    else xiu.classList.add("blink");
+    (tp>xp?tai:xiu).classList.add("blink");
 }
 run();
 setInterval(run,5000);
 
 /* DRAG */
-let drag=false,ox,oy;
-tool.addEventListener("mousedown",e=>{
-    drag=true;
-    ox=e.clientX-tool.offsetLeft;
-    oy=e.clientY-tool.offsetTop;
-});
-document.addEventListener("mousemove",e=>{
-    if(drag){
-        tool.style.left=e.clientX-ox+"px";
-        tool.style.top=e.clientY-oy+"px";
-    }
-});
-document.addEventListener("mouseup",()=>drag=false);
+let d=false,ox,oy;
+tool.onmousedown=e=>{d=true;ox=e.clientX-tool.offsetLeft;oy=e.clientY-tool.offsetTop}
+document.onmousemove=e=>{if(d){tool.style.left=e.clientX-ox+"px";tool.style.top=e.clientY-oy+"px"}}
+document.onmouseup=()=>d=false;
 
-/* Mobile */
-tool.addEventListener("touchstart",e=>{
-    drag=true;
-    ox=e.touches[0].clientX-tool.offsetLeft;
-    oy=e.touches[0].clientY-tool.offsetTop;
-});
-document.addEventListener("touchmove",e=>{
-    if(drag){
-        tool.style.left=e.touches[0].clientX-ox+"px";
-        tool.style.top=e.touches[0].clientY-oy+"px";
-    }
-});
-document.addEventListener("touchend",()=>drag=false);
+tool.ontouchstart=e=>{d=true;ox=e.touches[0].clientX-tool.offsetLeft;oy=e.touches[0].clientY-tool.offsetTop}
+document.ontouchmove=e=>{if(d){tool.style.left=e.touches[0].clientX-ox+"px";tool.style.top=e.touches[0].clientY-oy+"px"}}
+document.ontouchend=()=>d=false;
 </script>
 
 </body>
